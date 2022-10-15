@@ -13,7 +13,7 @@ valid_sensitivity={'HIGHLY_SENSITIVE', 'SENSITIVE', 'NORMAL'}
 valid_travel_mediums={'BUS', 'CAR', 'TRAIN'}
 
 
-#This view is for testing purpose
+#This view is for testing purposes
 @api_view(['GET'])
 def home(request,*args,**kwargs):
     b=request.body
