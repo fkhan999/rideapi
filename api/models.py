@@ -14,6 +14,10 @@ class asset_transport_request(models.Model):
     asset_type_sensitivity=models.CharField(max_length=20)
     deliver=models.CharField(max_length=150)
     status=models.IntegerField(default=0)
+    class Meta:
+        ordering = ['date_time_req']
+    
+    
     
     
 

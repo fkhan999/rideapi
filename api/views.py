@@ -7,6 +7,10 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 import datetime
+from .serializers import *
+from rest_framework.decorators import authentication_classes,permission_classes
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
 # Create your views here.
 
 valid_asset_type={'LAPTOP', 'TRAVEL_BAG', 'PACKAGE'}
@@ -30,9 +34,26 @@ def home(request,*args,**kwargs):
     b['content_type']=request.content_type
     return Response(b)
 
+@api_view(['POST'])
+def createUser(request,*args,**kwargs):
+    serializer=UserSerializers(data=request.data)
+    if not serializer.is_valid():
+        return Response({'error':serializer.errors,"message":"Please provide correct data"},status=403)
+    serializer.save()
+    return Response({"message":"User created succesfully"},status=200)
+
 #This view is for creating new asset request for requester
 @api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def asset_req(request,*args,**kwargs):
+    request.data['user_req']=str(request.user)
+    serializer=AssetSerializers(data=request.data)
+    if not serializer.is_valid():
+        return Response({'error':serializer.errors,"message":"Please provide correct data"},status=403)
+    serializer.save()
+    return Response({"message":"Request created succesfully with id "+str(serializer.data['id'])},status=200)
+    """
     try:
         a=json.loads(request.body)
         print(a)
@@ -48,11 +69,22 @@ def asset_req(request,*args,**kwargs):
     data={"message":"Request successfully added"}
     data['data']="Request id is "+str(response_from_db.id)
     return Response(data,status=200)
+    """
 
 
 #This view is for creating new ride information request by rider
 @api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def rider_req(request,*args,**kwargs):
+    request.data['user_rider']=str(request.user)
+    serializer=RiderSerializers(data=request.data)
+    if not serializer.is_valid():
+        return Response({'error':serializer.errors,"message":"Please provide correct data"},status=403)
+    serializer.save()
+    return Response({"message":"Request created succesfully with id "+str(serializer.data['id'])},status=200)
+    """
+    
     try:
         a=json.loads(request.body)
         print(a)
@@ -65,17 +97,27 @@ def rider_req(request,*args,**kwargs):
     data={"message":"Request successfully added"}
     data['data']="Request id is "+str(response_from_db.id)
     return Response(data,status=200)
+    """
 
 #This view is for viewing request sent by a requester
 @api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def asset_req_get(request,*args,**kwargs):
+    data=asset_transport_request.objects.filter(user_req=str(request.user))
     try:
         a=json.loads(request.body)
-        print(a)
-        user=a['user']
+        data=data.filter(asset_type=a['asset_type'].upper())
     except:
-        return Response({"message":"Invalid parameter"},status=400)
-    data=asset_transport_request.objects.filter(user_req=user)
+        pass
+    serializer=AssetreqSerializers(data,many=True)
+    try:
+        if a['status']:
+            result = filter(lambda x: x['current_status'] == a['status'], serializer.data)
+    except:
+        result=serializer.data
+    return Response({"asset req":result,"message":"Requests successfully fetched"})
+    """
     try:
         data=data.filter(asset_type=a['asset_type'].upper())
     except:
@@ -86,13 +128,14 @@ def asset_req_get(request,*args,**kwargs):
     res={"message":"success","data":[]}
     res1=[]
     for x in data:
+        #print(x.current_status())
         b=model_to_dict(x)
         #print(str(b['date_time_req']).replace('+00:00',''))
         format="%Y-%m-%d %H:%M:%S"
         dt=datetime.datetime.strptime((str(b['date_time_req'])).replace('+00:00',''),format)
         if (dt-datetime.datetime.now()).total_seconds()<0 and b['status']==0:
             b['status']="Expired"
-            print(dt-datetime.datetime.now())
+            #print(dt-datetime.datetime.now())
             #print(b['date_time_req']-datetime.datetime.now())
             pass
         elif b['status']==0:
@@ -108,12 +151,16 @@ def asset_req_get(request,*args,**kwargs):
         return Response({"message":"Either no request for this user or no request with this filter"},status=404)
     res1=sorted(res1, key=lambda i: i['date_time_req'])
     res['data']=res1
-    print(res)
+    #print(res)
     return Response(res,status=200)
+
+    """
 
 
 #This view is for  viewing match with rider
 @api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def match(request,*args,**kwargs):
     try:
         a=json.loads(request.body)
@@ -147,6 +194,8 @@ def match(request,*args,**kwargs):
 
 #this view is for selecting a rider out of match
 @api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def rider_select(request,*args,**kwargs):
     try:
         request_body=json.loads(request.body)
