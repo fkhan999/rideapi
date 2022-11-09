@@ -116,11 +116,12 @@ def match(request,*args,**kwargs):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def rider_select(request,*args,**kwargs):
+    print(str(request.user))
     serializer=SelectSerializer(data=request.data)
     if not serializer.is_valid():
         return Response({'error':serializer.errors,"message":"Please provide correct data"},status=403)
     try:
-        data=asset_transport_request.objects.get(user=str(request.user),id=serializer.data['request_id'])
+        data=asset_transport_request.objects.get(user_req=str(request.user),id=serializer.data['request_id'])
     except:
         return Response({"message":"No record exists for requester id: "+str(serializer.data['request_id'])},status=404)
     try:
