@@ -54,4 +54,36 @@ class RiderSerializers(serializers.ModelSerializer):
             raise serializers.ValidationError("Valid medium type are BUS, CAR or TRAIN")
         return data
 
+class RiderMatchSerializers(serializers.ModelSerializer):
+    class Meta:
+        model=rider_request
+        fields='__all__'
+
+class AssetReqGetSerializer(serializers.Serializer):
+    asset_type=serializers.CharField(max_length=200,required=False)
+    status=serializers.CharField(max_length=200,required=False)
+    def validate_asset_type(self,data):
+        if data not in {'LAPTOP', 'TRAVEL_BAG', 'PACKAGE'}:
+            raise serializers.ValidationError("Valid assest type are LAPTOP,TRAVEL_BAG or PACKAGE")
+        return data
+
+    def validate_status(self,data):
+        if data not in {'Pending', 'Expired', 'Confirmed'}:
+            raise serializers.ValidationError("Valid status are 'Pending', 'Expired', 'Confirmed'")
+        return data
+
+class MatchSerializer(serializers.Serializer):
+    id=serializers.IntegerField()
+    page=serializers.IntegerField(required=False,default=1)
+    def validate_page(self,data):
+        if data<=0:
+            raise serializers.ValidationError("Page number cannot be greater less than or equal to zero")
+        return data
+
+class SelectSerializer(serializers.Serializer):
+    ride_id=serializers.IntegerField()
+    request_id=serializers.IntegerField()
+
+
+
             
